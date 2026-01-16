@@ -4,4 +4,4 @@ matplotlib
 numpy
 seaborn
 scikit-learn
-autogluon.tabular
+autogluon.tabular==1.4.0
