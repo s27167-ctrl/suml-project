@@ -8,7 +8,7 @@ import pandas as pd
 
 @st.cache_resource
 def load_model():
-    return TabularPredictor.load("/Users/olabub/Desktop/SUML/features_10_400")
+    return TabularPredictor.load("features_10_400")
 
 predictor = load_model()
 
