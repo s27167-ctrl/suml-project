@@ -1,10 +1,17 @@
 import streamlit as st
-
+from autogluon.tabular import TabularPredictor
+import pandas as pd
 
 st.set_page_config(page_title="Przewidywanie satysfakcji pasażera", layout="wide",page_icon="✈️")
 
+@st.cache_resource
+def load_model():
+    return TabularPredictor.load("/Users/olabub/Desktop/SUML/features_10_400")
+
+predictor = load_model()
+
 page_style = """
-<style>
+<style> 
 /*PAGE*/
 [data-testid="stAppViewContainer"] {
     background-color: #dff2ff; /* jasnoniebieskie tło */
@@ -76,19 +83,30 @@ st.divider()
 col1, col2 = st.columns(2)
 
 with col1:
-    gender = st.selectbox("Płeć", ["Female", "Male"])
     customer_type = st.selectbox("Typ klienta", ["Loyal Customer", "Disloyal Customer"])
-    age = st.slider("Wiek", 16, 77, 35)
+    inflight_wifi_service = st.slider("WiFi na pokładzie (1–5)", 1, 5, 3)
     travel_type = st.selectbox("Cel podróży", ["Personal Travel", "Business Travel"])
+    travel_class= st.selectbox("Klasa podróży w samolocie", ["Business", "Eco", "Eco Plus"])
 
 with col2:
-    travel_class = st.selectbox("Klasa", ["Eco", "Eco Plus", "Business"])
-    flight_distance = st.slider("Dystans lotu (km)", 100, 4000, 600)
-    arrival_delay = st.slider("Opóźnienie przylotu (min)", 0, 470, 10)
-    wifi_rating = st.slider("Ocena Wi-Fi (1–5)", 0, 5, 3)
+    online_boarding = st.slider("Online boarding (1–5)", 1, 5, 3)
+    checkin_service = st.slider("Check-in service (1–5)", 1, 5, 3)
+    cleanliness = st.slider("Czystość (1–5)", 1, 5, 3)
     seat_comfort = st.slider("Wygoda siedzenia (1–5)", 0, 5, 3)
 
 st.divider()
+
+def prepare_input():
+    return pd.DataFrame([{
+        "Type of Travel": travel_type,
+        "Inflight wifi service": inflight_wifi_service,
+        "Customer Type": customer_type,
+        "Online boarding": online_boarding,
+        "Checkin service": checkin_service,
+        "Class": travel_class,
+        "Seat comfort": seat_comfort,
+        "Cleanliness": cleanliness
+    }])
 
 if "stage" not in st.session_state:
     st.session_state.stage = "form"
@@ -104,14 +122,14 @@ elif st.session_state.stage == "confirm":
     st.markdown("### Potwierdź wprowadzone dane")
     st.info(
         f"""
-        **Płeć:** {gender}  
+        **Typ podrózy:** {travel_type}  
         **Typ klienta:** {customer_type}  
-        **Wiek:** {age}  
+        **Online boarding:** {online_boarding}/5  
         **Cel podróży:** {travel_type}  
         **Klasa:** {travel_class}  
-        **Dystans:** {flight_distance} km  
-        **Opóźnienie:** {arrival_delay} min  
-        **Wi-Fi:** {wifi_rating}/5  
+        **Check-in service:** {checkin_service}/5  
+        **Czystość:** {cleanliness}/5  
+        **Wi-Fi:** {inflight_wifi_service}/5  
         **Wygoda siedzenia:** {seat_comfort}/5  
         """
     )
@@ -130,11 +148,13 @@ elif st.session_state.stage == "confirm":
         st.session_state.stage = "form"
         st.rerun()
 
+
 elif st.session_state.stage == "result":
-    prediction = 1
+    input_df = prepare_input()
+    prediction = predictor.predict(input_df).iloc[0]
     st.markdown("### Wynik predykcji")
     st.divider()
-    if prediction == 1:
+    if prediction == "satisfied":
         st.success("Pasażer jest zadowolony z podróży.")
     else:
         st.error("Pasażer nie jest zadowolony z podróży.")

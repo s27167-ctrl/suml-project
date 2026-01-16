@@ -2,9 +2,15 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, roc_curve, auc
+from sklearn.metrics import confusion_matrix, roc_curve, auc, accuracy_score, f1_score
+from autogluon.tabular import TabularPredictor
+import pandas as pd
 
-#przykładowe dane do zmiany jak już będzie gotowy projekt
+@st.cache_resource
+def load_model():
+    return TabularPredictor.load("/Users/olabub/Desktop/SUML/features_10_400")
+
+predictor = load_model()
 
 st.set_page_config(page_title="Analiza modelu", layout="wide",page_icon="✈️")
 
@@ -36,44 +42,69 @@ h1, h2, h3, h4, h5, h6 {
 </style>
 """
 st.markdown(page_style, unsafe_allow_html=True)
-st.title("Analiza modelu XXX")
+st.title("Analiza modelu WeightedEnsemble_L2_FULL")
 
-st.markdown("""
-Model **XXX** przewiduje satysfakcję pasażerów z wysoką skutecznością.
+# Wczytanie danych testowych
+test_df = pd.read_csv("data/test_new.csv")
+X_test = test_df.drop(columns=["satisfaction"])
+y_true = test_df["satisfaction"]
+
+# Predykcje
+y_pred = predictor.predict(X_test)
+y_proba = predictor.predict_proba(X_test)
+
+# Metryki
+accuracy = accuracy_score(y_true, y_pred)
+f1 = f1_score(y_true, y_pred, pos_label='satisfied')
+fpr, tpr, _ = roc_curve(y_true, y_proba['satisfied'], pos_label='satisfied')
+auc_score = auc(fpr, tpr)
+
+#Opis modelu
+st.markdown(f"""
+Model **WeightedEnsemble_L2_FULL** został wytrenowany z wykorzystaniem biblioteki **AutoGluon Tabular**.
+Jest on modelem zespołowym (ensemble), który łączy predykcje wielu algorytmów uczenia maszynowego
+w celu uzyskania jak najwyższej skuteczności predykcji.
+
+Model został wytrenowany na pełnym zbiorze danych
+i wykorzystuje technikę **stackingu (poziom L2)**
+
+**Typ problemu:** klasyfikacja binarna  
+**Zmienna docelowa:** satysfakcja pasażera  
+**Liczba cech:** {len(predictor.feature_metadata.get_features())}  
+
 ### Kluczowe metryki:
-- **Accuracy:** 0.87  
-- **F1-score:** 0.84  
-- **AUC-ROC:** 0.91  
-
-Poniższe wizualizacje pomagają lepiej zrozumieć działanie modelu.
+- **Accuracy:** {accuracy:.2f}
+- **F1-score:** {f1:.2f}
+- **AUC-ROC:** {auc_score:.2f}
 """)
 
-feature_names = [
-    "Type of Travel", "Inflight Wi-Fi", "Customer Type",
-    "Online boarding", "Seat comfort", "Leg room service", "Class", "Age"
-]
-importance = [0.22, 0.18, 0.15, 0.12, 0.10, 0.09, 0.08, 0.06]
+#Porównanie 5 najlepszych modeli
+st.markdown("### Najlepsze modele (top 5)")
+lb = predictor.leaderboard(silent=True)
+st.dataframe(lb.head(5))
 
+# Feature Importance
+fi = predictor.feature_importance(data=test_df)
+fi = fi.sort_values("importance", ascending=True)
 fig, ax = plt.subplots()
-ax.barh(feature_names, importance)
+ax.barh(fi.index, fi["importance"])
 ax.set_xlabel("Znaczenie cechy")
-ax.set_title("Ważność cech w modelu XXX")
+ax.set_title("Ważność cech w modelu")
 st.pyplot(fig)
 
-y_true = np.random.randint(0,2,100)
-y_pred = np.random.randint(0,2,100)
-cm = confusion_matrix(y_true, y_pred)
+# Macierz pomyłek z etykietami
+class_labels = predictor.class_labels  # ['neutral or dissatisfied', 'satisfied']
+cm = confusion_matrix(y_true, y_pred, labels=class_labels)
 fig, ax = plt.subplots()
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_labels, yticklabels=class_labels, ax=ax)
 ax.set_xlabel("Predykcja")
 ax.set_ylabel("Rzeczywista")
 ax.set_title("Macierz pomyłek")
 st.pyplot(fig)
 
-fpr, tpr, _ = roc_curve(y_true, np.random.rand(100))
-roc_auc = auc(fpr, tpr)
+# Krzywa ROC
 fig, ax = plt.subplots()
-ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'Krzywa ROC = {roc_auc:.2f}')
+ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {auc_score:.2f}')
 ax.plot([0,1],[0,1], color='navy', lw=1, linestyle='--')
 ax.set_xlabel("False Positive Rate")
 ax.set_ylabel("True Positive Rate")
@@ -82,8 +113,8 @@ ax.legend(loc="lower right")
 st.pyplot(fig)
 
 st.markdown("""
-### Wnioski dodatkowe:
+### Wnioski:
 - Model świetnie rozróżnia zadowolonych i niezadowolonych klientów (AUC-ROC > 0.9).  
 - Macierz pomyłek pokazuje, że najwięcej błędów zdarza się w przewidywaniu niezadowolonych klientów.  
-- Linie lotnicze mogą użyć informacji o najważniejszych cechach do poprawy doświadczenia pasażerów.
+- Linie lotnicze mogą użyć informacji o najważniejszych cechach do poprawy doświadczenia pasażerów: np. lepsza obsługa WiFi, dostosowanie usług do typu podróży lub preferencji klientów.
 """)

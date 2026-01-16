@@ -46,6 +46,12 @@ Dzięki temu linie lotnicze mogą:
 - poprawić jakość obsługi klienta,
 - lepiej reagować na niezadowolenie pasażerów,
 - analizować czynniki wpływające na lojalność klientów.
+
+### Dlaczego to ważne
+Satysfakcja pasażera wpływa bezpośrednio na:
+- Lojalność klienta i powtarzalność rezerwacji,
+- Pozytywne opinie i rekomendacje online,
+- Dochody linii lotniczej poprzez dodatkowe usługi i pakiety premium.
 """)
 
 st.markdown("""
