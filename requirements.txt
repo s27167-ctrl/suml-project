@@ -2,3 +2,5 @@ matplotlib
 numpy
 seaborn
 scikit-learn
+sklearn.metrics
+autogluon.tabular
