@@ -8,7 +8,7 @@ st.set_page_config(page_title="Przewidywanie satysfakcji pasażera", layout="wid
 @st.cache_resource
 def load_model():
     return TabularPredictor.load(
-        "features_10_400",
+        "best-model",
         require_version_match=False,
         require_py_version_match=False
     )
