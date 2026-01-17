@@ -6,3 +6,4 @@ seaborn
 scikit-learn
 autogluon.tabular==1.4.0
 joblib
+torch
