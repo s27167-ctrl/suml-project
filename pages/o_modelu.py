@@ -70,7 +70,7 @@ Jest on modelem zespołowym (ensemble), który łączy predykcje wielu algorytm�
 w celu uzyskania jak najwyższej skuteczności predykcji.
 
 Model został wytrenowany na pełnym zbiorze danych
-i wykorzystuje technikę **stackingu (poziom L2)**
+i wykorzystuje technikę stackingu (poziom L2)
 
 **Typ problemu:** klasyfikacja binarna  
 **Zmienna docelowa:** satysfakcja pasażera  

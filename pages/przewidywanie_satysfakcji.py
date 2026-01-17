@@ -1,6 +1,7 @@
 import streamlit as st
 from autogluon.tabular import TabularPredictor
 import pandas as pd
+import joblib
 
 st.set_page_config(page_title="Przewidywanie satysfakcji pasażera", layout="wide",page_icon="✈️")
 
@@ -98,7 +99,6 @@ with col2:
     cleanliness = st.slider("Czystość (1–5)", 1, 5, 3)
     seat_comfort = st.slider("Wygoda siedzenia (1–5)", 0, 5, 3)
 
-st.divider()
 
 def prepare_input():
     return pd.DataFrame([{
@@ -107,8 +107,8 @@ def prepare_input():
         "Customer Type": customer_type,
         "Online boarding": online_boarding,
         "Checkin service": checkin_service,
-        "Class": travel_class,
         "Seat comfort": seat_comfort,
+        "Class": travel_class,
         "Cleanliness": cleanliness
     }])
 
@@ -121,6 +121,7 @@ if st.session_state.stage == "form":
         if st.button("Przewiduj satysfakcję", use_container_width=True):
             st.session_state.stage = "confirm"
             st.rerun()
+
 
 elif st.session_state.stage == "confirm":
     st.markdown("### Potwierdź wprowadzone dane")
@@ -155,6 +156,9 @@ elif st.session_state.stage == "confirm":
 
 elif st.session_state.stage == "result":
     input_df = prepare_input()
+    scaler = joblib.load("scaler.pkl")
+    numeric_cols = joblib.load("numeric_cols.pkl")
+    input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
     prediction = predictor.predict(input_df).iloc[0]
     st.markdown("### Wynik predykcji")
     st.divider()
